@@ -40,10 +40,10 @@ pipeline {
         }
 
         stage('Docker Build') {
-            steps {
-                bat "docker build -t %IMAGE_NAME% ."
-            }
-        }
+		steps {
+        bat "docker build -t %IMAGE_NAME% ./video_proj"
+		}
+			}
 
         stage('Docker Cleanup (Old Container)') {
             steps {
