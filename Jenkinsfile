@@ -2,17 +2,18 @@ pipeline {
     agent any
 
     environment {
-        DOTNET_CLI_TELEMETRY_OPTOUT = '1'
-        PROJECT_PATH = 'video_proj/video_proj.csproj'
-        OUTPUT_DIR = 'published'
-        IMAGE_NAME = 'video_proj-api'
-        CONTAINER_NAME = 'video_proj_container'
+        DOTNET_ROOT = "C:\\Program Files\\dotnet"
+        PATH = "${env.DOTNET_ROOT};${env.PATH}"
+        IMAGE_NAME = "video_proj-api"
+        CONTAINER_NAME = "video_proj_container"
+        PROJECT_PATH = "video_proj/video_proj.csproj"
+        PUBLISH_DIR = "published"
     }
 
     stages {
         stage('Checkout') {
             steps {
-                git url: 'https://github.com/shahid8872/video_proj.git'
+                git 'https://github.com/shahid8872/video_proj.git'
             }
         }
 
@@ -36,34 +37,41 @@ pipeline {
 
         stage('Publish') {
             steps {
-                bat "dotnet publish %PROJECT_PATH% -c Release -o %OUTPUT_DIR%"
+                bat "dotnet publish ${env.PROJECT_PATH} -c Release -o ${env.PUBLISH_DIR}"
             }
         }
 
         stage('Docker Build') {
             steps {
-                bat "docker build -t %IMAGE_NAME% ./video_proj"
+                bat "docker build -t ${env.IMAGE_NAME} ./video_proj"
             }
         }
 
         stage('Docker Cleanup (Old Container)') {
             steps {
-                bat """
-                docker stop %CONTAINER_NAME% || echo Not running
-                docker rm %CONTAINER_NAME% || echo Already removed
-                """
+                script {
+                    def stopCode = bat(script: "docker stop %CONTAINER_NAME%", returnStatus: true)
+                    if (stopCode != 0) {
+                        echo "No running container to stop (exit code ${stopCode})."
+                    }
+
+                    def rmCode = bat(script: "docker rm %CONTAINER_NAME%", returnStatus: true)
+                    if (rmCode != 0) {
+                        echo "No existing container to remove (exit code ${rmCode})."
+                    }
+                }
             }
         }
 
         stage('Docker Run') {
             steps {
-                bat "docker run -d -p 8080:80 --name %CONTAINER_NAME% %IMAGE_NAME%"
+                bat "docker run -d -p 8080:80 --name ${env.CONTAINER_NAME} ${env.IMAGE_NAME}"
             }
         }
 
         stage('Deploy') {
             steps {
-                echo "Application deployed in Docker container: %CONTAINER_NAME%"
+                echo 'Deploy stage complete (customize if needed).'
             }
         }
     }
@@ -73,7 +81,7 @@ pipeline {
             echo '❌ Build or deployment failed. Check logs above.'
         }
         success {
-            echo '✅ Build and deployment completed successfully.'
+            echo '✅ Build and deployment succeeded!'
         }
     }
 }
