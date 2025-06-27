@@ -2,16 +2,17 @@ pipeline {
     agent any
 
     environment {
+        DOTNET_CLI_TELEMETRY_OPTOUT = '1'
+        PROJECT_PATH = 'video_proj/video_proj.csproj'
+        OUTPUT_DIR = 'published'
         IMAGE_NAME = 'video_proj-api'
         CONTAINER_NAME = 'video_proj_container'
-        HOST_PORT = '5000'
-        CONTAINER_PORT = '8080'
     }
 
     stages {
         stage('Checkout') {
             steps {
-                git 'https://github.com/shahid8872/video_proj.git'
+                git url: 'https://github.com/shahid8872/video_proj.git'
             }
         }
 
@@ -29,21 +30,21 @@ pipeline {
 
         stage('Test') {
             steps {
-                bat 'dotnet test'
+                bat 'dotnet test --no-build --verbosity normal'
             }
         }
 
         stage('Publish') {
             steps {
-                bat 'dotnet publish -c Release -o published'
+                bat "dotnet publish %PROJECT_PATH% -c Release -o %OUTPUT_DIR%"
             }
         }
 
         stage('Docker Build') {
-		steps {
-        bat "docker build -t %IMAGE_NAME% ./video_proj"
-		}
-			}
+            steps {
+                bat "docker build -t %IMAGE_NAME% ./video_proj"
+            }
+        }
 
         stage('Docker Cleanup (Old Container)') {
             steps {
@@ -56,13 +57,13 @@ pipeline {
 
         stage('Docker Run') {
             steps {
-                bat "docker run -d --name %CONTAINER_NAME% -p %HOST_PORT%:%CONTAINER_PORT% %IMAGE_NAME%"
+                bat "docker run -d -p 8080:80 --name %CONTAINER_NAME% %IMAGE_NAME%"
             }
         }
 
         stage('Deploy') {
             steps {
-                echo '🚀 App is running in Docker. Access via http://localhost:5000/swagger'
+                echo "Application deployed in Docker container: %CONTAINER_NAME%"
             }
         }
     }
@@ -70,6 +71,9 @@ pipeline {
     post {
         failure {
             echo '❌ Build or deployment failed. Check logs above.'
+        }
+        success {
+            echo '✅ Build and deployment completed successfully.'
         }
     }
 }
