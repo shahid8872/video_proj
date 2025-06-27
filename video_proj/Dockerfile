@@ -1,24 +1,30 @@
-#See https://aka.ms/customizecontainer to learn how to customize your debug container and how Visual Studio uses this Dockerfile to build your images for faster debugging.
-
+# Base image for runtime
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
-USER app
 WORKDIR /app
 EXPOSE 8080
-EXPOSE 8081
 
+# Set environment to Development
+ENV ASPNETCORE_ENVIRONMENT=Development
+
+# SDK image for building
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["video_proj/video_proj.csproj", "video_proj/"]
-RUN dotnet restore "./video_proj/video_proj.csproj"
-COPY . .
-WORKDIR "/src/video_proj"
-RUN dotnet build "./video_proj.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
+# Copy project and restore
+COPY ["video_proj.csproj", "."]
+RUN dotnet restore "video_proj.csproj"
+
+# Copy all files and build
+COPY . .
+RUN dotnet build "video_proj.csproj" -c $BUILD_CONFIGURATION -o /app/build
+
+# Publish the build output
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./video_proj.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "video_proj.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
+# Final stage
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
