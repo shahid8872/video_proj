@@ -65,7 +65,7 @@ pipeline {
 
         stage('Docker Run') {
             steps {
-                bat "docker run -d -p 8080:80 --name ${env.CONTAINER_NAME} ${env.IMAGE_NAME}"
+                bat "docker run -d -p 8081:80 --name ${env.CONTAINER_NAME} ${env.IMAGE_NAME}"
             }
         }
 
