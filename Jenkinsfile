@@ -1,14 +1,6 @@
 pipeline {
     agent any
 
-    environment {
-        DOTNET_CLI_TELEMETRY_OPTOUT = '1'
-    }
-
-    triggers {
-        githubPush() // Trigger pipeline on GitHub push
-    }
-
     stages {
         stage('Checkout') {
             steps {
@@ -18,42 +10,36 @@ pipeline {
 
         stage('Restore') {
             steps {
-                sh 'dotnet restore video_proj/video_proj.csproj'
+                bat 'dotnet restore'
             }
         }
 
         stage('Build') {
             steps {
-                sh 'dotnet build video_proj/video_proj.csproj --no-restore'
+                bat 'dotnet build --configuration Release'
             }
         }
 
         stage('Test') {
             steps {
-                echo 'No tests found – skipping for now.'
-                // Optional: Add test project later
+                bat 'dotnet test'
             }
         }
 
         stage('Publish') {
             steps {
-                sh 'dotnet publish video_proj/video_proj.csproj -c Release -o out'
+                bat 'dotnet publish -c Release -o published'
             }
         }
 
         stage('Deploy') {
             steps {
-                echo 'Deploy step goes here. Example: SCP, Docker, Azure CLI, etc.'
-                // Example placeholder:
-                // sh 'scp -r out/* user@yourserver:/var/www/video_proj'
+                echo 'Deploy step (add deployment commands here)'
             }
         }
     }
 
     post {
-        success {
-            echo '✅ Build and deployment succeeded!'
-        }
         failure {
             echo '❌ Build or deployment failed. Check logs above.'
         }
